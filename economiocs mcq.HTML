@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🎯 Quiz with Balloon Effect</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef1f7;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #3949ab;
+      color: white;
+      padding: 20px;
+      font-size: 24px;
+      text-align: center;
+    }
+    main {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    select, textarea, input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .btn {
+      background: #3949ab;
+      color: white;
+      font-weight: bold;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .section {
+      display: none;
+      margin-top: 20px;
+    }
+    .btn-option {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      font-size: 18px;
+      border: 2px solid #ccc;
+      background: #f9f9f9;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.8; }
+      100% { transform: scale(0); opacity: 0; }
+    }
+
+    .balloon-pop {
+      width: 100px;
+      animation: pop 0.8s ease-out forwards;
+      display: block;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+  <header>📚 Quiz Practice with Balloon 🎈</header>
+  <main>
+    <label><strong>मुख्य विषय:</strong></label>
+    <select id="mainSubject" onchange="loadSubSubjects()">
+      <option value="">-- विषय चुनें --</option>
+      <option value="economics">Economics</option>
+      <option value="ecology">Ecology</option>
+      <option value="history">History</option>
+      <option value="geography">Geography</option>
+      <option value="science">Science</option>
+      <option value="polity">Polity</option>
+    </select>
+
+    <label><strong>उपविषय:</strong></label>
+    <select id="subSubject" onchange="onSubjectSelected()">
+      <option value="">-- उपविषय चुनें --</option>
+    </select>
+
+    <div style="text-align:center; margin: 20px 0;">
+      <button class="btn" onclick="showInputSection()">➕ प्रश्न जोड़ें</button>
+      <button class="btn" onclick="showPracticeSection()">🎯 अभ्यास करें</button>
+    </div>
+
+    <div id="inputSection" class="section">
+      <h3>➕ नया प्रश्न जोड़ें</h3>
+      <textarea id="question" placeholder="प्रश्न"></textarea>
+      <input id="optA" placeholder="विकल्प A">
+      <input id="optB" placeholder="विकल्प B">
+      <input id="optC" placeholder="विकल्प C">
+      <input id="optD" placeholder="विकल्प D">
+      <select id="correct">
+        <option value="A">A</option><option value="B">B</option>
+        <option value="C">C</option><option value="D">D</option>
+      </select>
+      <textarea id="explanation" placeholder="व्याख्या"></textarea>
+      <button class="btn" onclick="saveQuestion()">💾 सेव करें</button>
+      <div id="questionCount"></div>
+    </div>
+
+    <div id="practiceSection" class="section">
+      <h3>🎯 अभ्यास</h3>
+      <div id="quizQuestion"></div>
+      <div id="quizOptions"></div>
+      <div id="balloonEffect" style="text-align:center;"></div>
+    </div>
+  </main>
+
+<script>
+  const subs = {
+    economics: ["Microeconomics", "Macroeconomics"],
+    ecology: ["Environmental Issues", "Climate Change"],
+    history: ["Ancient", "Medieval", "Modern"],
+    geography: ["Indian Geography", "World Geography", "General Geography"],
+    science: ["Physics", "Chemistry", "Biology"],
+    polity: ["Indian Constitution", "Governance"]
+  };
+
+  let currentKey = "";
+  let questions = [];
+  let currentQuestion = 0;
+  let correctCount = 0;
+  let incorrectCount = 0;
+
+  function loadSubSubjects() {
+    const main = document.getElementById('mainSubject').value;
+    const subSelect = document.getElementById('subSubject');
+    subSelect.innerHTML = `<option value="">-- उपविषय चुनें --</option>`;
+    if (subs[main]) {
+      subs[main].forEach(sub => {
+        const opt = document.createElement('option');
+        opt.value = sub;
+        opt.textContent = sub;
+        subSelect.appendChild(opt);
+      });
+    }
+  }
+
+  function onSubjectSelected() {
+    const main = document.getElementById('mainSubject').value;
+    const sub = document.getElementById('subSubject').value;
+    if (main && sub) {
+      currentKey = `quiz_${main}_${sub}`;
+      questions = JSON.parse(localStorage.getItem(currentKey) || '[]');
+    }
+  }
+
+  function showInputSection() {
+    if (!currentKey) return alert("कृपया पहले विषय और उपविषय चुनें!");
+    document.getElementById('inputSection').style.display = 'block';
+    document.getElementById('practiceSection').style.display = 'none';
+    document.getElementById('questionCount').textContent = `🔢 कुल प्रश्न: ${questions.length}`;
+  }
+
+  function showPracticeSection() {
+    if (!currentKey) return alert("कृपया पहले विषय और उपविषय चुनें!");
+    currentQuestion = 0;
+    correctCount = 0;
+    incorrectCount = 0;
+    questions = JSON.parse(localStorage.getItem(currentKey) || '[]');
+    if (questions.length === 0) {
+      alert("❗ अभी कोई प्रश्न नहीं जोड़ा गया है!");
+      return;
+    }
+    document.getElementById('inputSection').style.display = 'none';
+    document.getElementById('practiceSection').style.display = 'block';
+    showQuestion();
+  }
+
+  function saveQuestion() {
+    const q = document.getElementById('question').value.trim();
+    const A = document.getElementById('optA').value.trim();
+    const B = document.getElementById('optB').value.trim();
+    const C = document.getElementById('optC').value.trim();
+    const D = document.getElementById('optD').value.trim();
+    const correct = document.getElementById('correct').value;
+    const explanation = document.getElementById('explanation').value.trim();
+
+    if (!q || !A || !B || !C || !D || !correct) {
+      alert("❗ कृपया सभी फ़ील्ड भरें!");
+      return;
+    }
+
+    questions.push({
+      question: q,
+      options: { A, B, C, D },
+      correct,
+      explanation
+    });
+
+    localStorage.setItem(currentKey, JSON.stringify(questions));
+    document.getElementById('question').value = '';
+    document.getElementById('optA').value = '';
+    document.getElementById('optB').value = '';
+    document.getElementById('optC').value = '';
+    document.getElementById('optD').value = '';
+    document.getElementById('explanation').value = '';
+    document.getElementById('questionCount').textContent = `🔢 कुल प्रश्न: ${questions.length}`;
+  }
+
+  function showQuestion() {
+    const q = questions[currentQuestion];
+    const quizQ = document.getElementById('quizQuestion');
+    const quizOpt = document.getElementById('quizOptions');
+    const balloonBox = document.getElementById('balloonEffect');
+    balloonBox.innerHTML = "";
+    quizOpt.innerHTML = "";
+
+    if (!q) {
+      const total = correctCount + incorrectCount;
+      const accuracy = total ? ((correctCount / total) * 100).toFixed(2) : 0;
+      quizQ.innerHTML = `
+        ✅ सही: ${correctCount}<br>
+        ❌ गलत: ${incorrectCount}<br>
+        📊 सटीकता: ${accuracy}%
+      `;
+      return;
+    }
+
+    quizQ.innerHTML = `Q${currentQuestion + 1}: ${q.question}`;
+    for (let key in q.options) {
+      quizOpt.innerHTML += `<button class="btn-option" onclick="checkAnswer('${key}')">${key}: ${q.options[key]}</button>`;
+    }
+  }
+
+  function checkAnswer(selected) {
+    const q = questions[currentQuestion];
+    const opts = document.querySelectorAll('.btn-option');
+    const balloonBox = document.getElementById("balloonEffect");
+    balloonBox.innerHTML = "";
+
+    opts.forEach(btn => {
+      const key = btn.textContent.split(':')[0];
+      if (key === q.correct) {
+        btn.style.backgroundColor = 'green';
+        btn.style.color = 'white';
+      } else if (key === selected) {
+        btn.style.backgroundColor = 'red';
+        btn.style.color = 'white';
+      }
+      btn.disabled = true;
+    });
+
+    const explanationBox = document.createElement("div");
+    explanationBox.style.marginTop = "15px";
+    explanationBox.style.fontWeight = "bold";
+
+    if (selected === q.correct) {
+      correctCount++;
+      explanationBox.innerHTML = `✅ सही उत्तर!<br><br>🔍 <u>व्याख्या:</u> ${q.explanation}`;
+      explanationBox.style.color = 'green';
+
+      const balloon = document.createElement("img");
+      balloon.src = "https://cdn-icons-png.flaticon.com/512/3474/3474367.png";
+      balloon.className = "balloon-pop";
+      balloonBox.appendChild(balloon);
+    } else {
+      incorrectCount++;
+      explanationBox.innerHTML = `❌ गलत उत्तर! सही उत्तर है: <b>${q.correct}</b><br><br>🔍 <u>व्याख्या:</u> ${q.explanation}`;
+      explanationBox.style.color = 'red';
+    }
+
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "btn";
+    nextBtn.textContent = "👉 अगला प्रश्न";
+    nextBtn.style.marginTop = "20px";
+    nextBtn.onclick = () => {
+      currentQuestion++;
+      showQuestion();
+    };
+
+    const container = document.getElementById("quizOptions");
+    container.appendChild(explanationBox);
+    container.appendChild(nextBtn);
+  }
+</script>
+</body>
+</html>
